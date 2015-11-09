@@ -1,0 +1,10 @@
+*.log
+*.aux
+soltn.pdf
+*.png
+*.pdf
+*.xcf
+*.cpt
+transscr.tex
+*~
+#*

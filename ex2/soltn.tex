@@ -1,0 +1,151 @@
+
+% \newcommand{\vv}{\vec{v}}
+% \newcommand{\uv}{\vec{u}}
+\newcommand{\unitV}[1]{{\vec{e}_{\mathrm{#1}}}}
+\newcommand{\posr}{\vec{r}}
+\newcommand{\Force}{\vec{F}}
+\newcommand{\AngMom}{\vec{L}}
+\newcommand{\mom}{\vec{p}}
+% \newcommand{\kwv}{\vec{k}}
+
+\exno{Motion under central force}
+
+Let $\Force : \mathbb{R}^3\to\mathbb{R}^3$ be a central force:
+\[
+  \Force = F(r)\cdot \unitV{r}
+         = \frac{F(r)}{r}\cdot \posr
+\]
+where $F$ should vanish\footnote{%
+Strictly speaking, we do not need this here (the integral definition for $V$ could start from any finite distance as well), but for actual physical forces it is required.
+} in the limit $r\to\infty$ fast enough to be integrable.
+
+\subex{}
+Let $V : \mathbb{R}^3\to\mathbb{R}$,
+\[
+  V(r) = \int\limits^r_\infty\ttd r'\: F(r')
+\]
+then, using spherical coordinates,
+\[
+  \nabla V
+   = \partial_r V(r) \cdot \unitV{r}
+    + \frac1r \partial_\vartheta V(r) \cdot \unitV{\vartheta}
+    + \frac1{r\sin\theta} \partial_\varphi V(r) \cdot \unitV{\varphi}
+   = \unitV{r} \partial_r\int\limits^r_\infty\ttd r'\: F(r')
+   = \unitV{r} F(r)
+   = \Force
+\]
+i.e. $\Force$ can be written as gradient of the potential $V$.
+
+\subex{}
+The angular momentum of a particle of mass $m$ at position $\posr(t)$ is
+\[
+  \AngMom(t) = \posr \times m\dot\posr.
+\]
+It is conserved:
+\[
+  \partial_t \AngMom
+     = (\partial_t\posr) \times m\dot\posr
+       + \posr \times \partial_t m\dot\posr
+     = \dot\posr \times m\dot\posr
+       + \posr \times m\ddot\posr
+     = 0 + \posr \times F(r)\unitV{r}
+     =  F(r) \posr \times\unitV{r}
+     = 0.
+\]
+
+
+\exno{Energy conservation of central force field}
+
+\subex{}
+Given any starting configuration of linearly independent%
+\footnote{If position and velocity are linearly dependent, then the entire dynamics are \emph{one}-dimensional.}
+$(\posr, \dot\posr)$, these vectors span a two-dimensional coordinate frame. Because $\partial_t \dot\posr = \tfrac1m \Force \,\|\, \posr$, the velocity and thus also position will then always stay in this plane, i.e. the remaining space dimension is not actually needed to describe the system dynamics.
+
+Use polar coordinates in the plane:
+\[
+  \posr = r\cdot (\cos\theta\cdot \unitV{x} + \sin\theta \cdot \unitV{y}).
+\]
+
+\subex{}
+\[
+  \dot\posr(t)
+     = \dot r \cdot (\cos\theta\cdot \unitV{x} + \sin\theta \cdot \unitV{y})
+      + r \cdot (\partial_t \cos\theta\cdot \unitV{x} + \partial_t\sin\theta \cdot \unitV{y})
+     = \frac{\dot r}{r} \cdot \posr
+      + r \cdot (-\dot\theta\sin\theta\cdot \unitV{x} + \dot\theta \cos\theta \cdot \unitV{y})
+     = \frac{\dot r}{r} \cdot \posr
+      + \dot\theta \cdot (\unitV{z}\times\posr)
+\]
+
+\subex{}
+
+\[
+  \dot\posr = \dot r \unitV{r} + r\dot\theta\unitV{\theta}
+\]
+\[
+  E = \tfrac12 m (\dot\posr)^2 + V
+\]
+\[
+  \frac{2(E - V)}{m} = (\dot\posr)^2 = \dot r^2 + \frac{(r^2\dot\theta)^2}{r^2}
+     = \frac{1}{u^4}(\tfrac{\ttd u}{\ttd\theta})^2 \dot\theta^2 + u^2 h^2
+\]
+
+
+\exno{}
+The cross-product of linear- and angular momentum varies as follows:
+\[
+  \partial_t (m\dot\posr \times \AngMom)
+    = (\partial_tm\dot\posr) \times \AngMom
+     + m\dot\posr \times \underbrace{\partial_t\AngMom}_{\mathclap{\text{conserved}}}
+    = m\ddot\posr \times \AngMom
+    = \Force \times \AngMom
+    = F(r)\unitV{r} \times (\posr \times m\dot\posr)
+    = \frac{F(r)}r\cdot m \left(
+         \posr (\posr\cdot \dot\posr) - \dot\posr (\posr \cdot \posr)
+       \right)
+    = \frac{F(r)}r\cdot m \left(
+         \posr (r\cdot \dot r) - r^2 \dot\posr
+       \right)
+    = F(r)\cdot m \left(
+          \dot r \posr - r\dot\posr
+       \right)
+    = F(r)\cdot mr^2 \partial_t\left(
+          \tfrac{\posr}{r}
+       \right)
+\]
+where it was used that
+\[
+  \partial_t\tfrac{\posr}{r}
+  = \posr \partial_t\tfrac1r + \tfrac1r \partial_t\posr
+  = - \posr\tfrac1{r^2}\dot{r} + \tfrac1r \dot\posr.
+\]
+If now $F(r) = \frac{\alpha}{r^2}$, then $F(r)\cdot mr^2$ is constant and can thus be
+pulled in the derivative:
+\[
+  \partial_t (m\dot\posr \times \AngMom)
+    = \partial_t \left( \alpha\cdot m
+          \tfrac{\posr}{r}
+       \right)
+    = \partial_t ( \alpha\cdot m \unitV{r} )
+\]
+\[
+  \ifnonlif { 0 = \partial_t ( m\dot\posr \times \AngMom - m\alpha \unitV{r} )
+       \:{=:} \partial_t \vec{A} }
+\]
+where $\vec{A}$ is called \emph{Laplace-Runge-Lenz vector}.
+
+Furthermore,
+\[
+  \vec{A}\cdot\posr + m\alpha r
+    = (m\dot\posr\times\AngMom)\cdot\posr - m\alpha\unitV{r}\cdot\posr + m\alpha r
+    = \det\begin{pmatrix}m\dot\posr & \AngMom & \posr\end{pmatrix} - m\alpha r + m\alpha r
+    = \det\begin{pmatrix}\AngMom & \posr & m\dot\posr \end{pmatrix} - 0
+    = \AngMom\cdot(\posr\times m\dot\posr)
+    = L^2.
+\]
+Since $\AngMom$ is conserved, so is $L^2$ and thus also $\vec{A}\cdot\posr + m\alpha r$.
+
+
+
+\end{document}
+

@@ -1,0 +1,55 @@
+\documentclass[a4paper,twoside,11pt]{article}
+
+
+% \usepackage[T1]{fontenc}
+% \usepackage{textcomp}
+
+\usepackage{pdfpages}
+
+% \usepackage{xstring}
+
+\usepackage{graphicx}
+
+\usepackage{amsmath}
+\usepackage{amsthm}
+% \usepackage{amsfonts}
+% \usepackage{amssymb}
+
+\usepackage[charter,cal=cmcal]{mathdesign}
+\usepackage[OMLmathrm,OMLmathbf]{isomath}
+
+
+\usepackage{breqn}
+
+
+\input{myCommon.tex}
+
+
+\renewcommand{\vec}[1]{\mathbf{#1}}
+
+
+
+\begin{document}
+
+\newcommand{\semester}{WS2015/2016}
+
+\pagestyle{myheadings}
+\markboth{Comp.Complex \\ Exercise \theSheetNo \\ \semester}
+         {\catsubtitle \\ Justus Sagem\"uller (4762282)}
+
+% \definecolor{background}{RGB}{240,230,192}
+
+\begin{center}
+  \begin{Huge}\textsc{Computional Complexity & Physics},
+              \textbf{Ex. \theSheetNo}\end{Huge}
+  \\
+  \begin{Large}Lecture David Gro\ss \\ \semester\end{Large}
+\end{center}
+
+
+\renewcommand{\thesection}{\arabic{section}.}
+\renewcommand{\thesubsection}{(\alph{subsection})}
+\renewcommand{\theenumi}{\textit(\roman{enumi}\textit)}
+
+\newcommand{\exno}[2][\value{section}+1]{\setcounter{section}{#1-1}\section{#2}}
+\newcommand{\subex}[2][\value{subsection}+1]{\setcounter{subsection}{#1-1}\subsection{#2}}
