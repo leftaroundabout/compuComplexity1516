@@ -1,56 +1,101 @@
+{-# LANGUAGE FlexibleInstances #-}
 
-infixr 2 :||, :|
-infixr 3 :&&
+import Prelude hiding (not)
+import Control.Arrow
+import Data.Monoid
 
-data SAT a = Lit a
-           | Not (SAT a)
-           | SAT a :|| SAT a
-           | SAT a :&& SAT a
-    deriving (Show)
+class Booly b where
+  (∨) :: b -> b -> b
+  (∧) :: b -> b -> b
+  not :: b -> b
 
-data CNFClause a = LitC Bool{-negated?-} a
-                 | CNFClause a :| CNFClause a
-    deriving (Show)
+class HasVariables b where
+  lit :: x -> b x
+  newVariable :: (Enum x, Ord x) => b x -> x
+
+infixr 2 :∨, ∨
+infixr 3 :∧, ∧
+  
+
+type Negation = Any
+
+type CNFClause a = [(Negation, a)]
 
 type CNF a = [CNFClause a]
 
+instance Booly (CNF a) where
+  -- conjunction is just concatenation of clause-lists:
+  p₁ ∧ p₂ = p₁ ++ p₂
+  
+  -- use distributive law to implement disjunction:
+  p₁ ∨ p₂ = [c₁ ++ c₂ | c₁<-p₁, c₂<-p₂]
+  
+  -- use De Morgan's law to implement negation of the conjunction of clauses
+  -- as disjunction of the individual negations.
+  not (p₁:ps) = [[first (Any False<>) x] | x <- p₁] ∨ not ps
+  not [] = [[]]
+
+instance HasVariables CNF where
+  lit x = [[(Any False, x)]]
+  newVariable cnfs = succ highest where highest = maximum $ map (maximum . snd) cnfs
+
+
+newtype CNF3Clause a = CNF3Clause {get3Clause :: CNFClause a} deriving (Show)
+
+type CNF3 a = [CNF3Clause a]
+
+getCNF3 :: CNF3 a -> CNF a
+getCNF3 = map get3Clause
+
+instance Booly (CNF3 a) where
+  -- conjunction is still just concatenation:
+  p₁ ∧ p₂ = p₁ ++ p₂
+  
+  -- De Morgan's law works as before.
+  not (CNF3Clause p₁:ps) = [CNF3Clause [first (Any False<>) x] | x <- p₁] ∨ not ps
+  not [] = [CNF3Clause[]]
+                
+  -- defer to ordinary CNF to implement disjunction. 
+  p₁ ∨ p₂ = cnfTo3CNF =<< getCNF3 p₁ ∨ getCNF3 p₂
+  
+
+satTo3sat :: CNFClause Integer -> CNF3 Integer
+satTo3sat p
+  | l<=3       = [CNF3Clause p]
+     -- Eliminate clauses with more than three disjunctions by using De Morgan.
+  | otherwise  = not $ (cnfTo3CNF =<< not [pl]) ∧ (cnfTo3CNF =<< not [pr])
+ where l = length p
+       (pl,pr) = splitAt (l`div`2) p
+
+
+
+-- type NAE3CNF a = CNF3 a  -- interpreted differently: `:|` means
+-- 
+-- o3CNFToNAE3CNF :: CNF3Clause a -> CNF3 a
+-- -- For a single disjunction, it's impossible
+-- o3CNFToNAE3CNF (LitC n x) = [LitC n x :| LitC (not n) x]
+-- o3CNFToNAE3CNF (LitC n x) = [LitC n x :| LitC (not n) x]
+
+data SAT a = Lit a
+           | Not (SAT a)
+           | SAT a :∨ SAT a
+           | SAT a :∧ SAT a
+    deriving (Show)
+
+instance Booly (SAT a) where
+  (∨) = (:∨)
+  (∧) = (:∧)
+  not (Not a) = a
+  not a = (Not a)
+
 asSAT :: CNF a -> SAT a
-asSAT = foldr1 (:&&) . map asSAT'
- where asSAT' (LitC False a) = Lit a
-       asSAT' (LitC True a) = Not (Lit a)
-       asSAT' (a:|b) = asSAT' a :|| asSAT' b
+asSAT = foldr1 (∧) . map (foldr1 (∨) . map mkLit)
+ where mkLit (Any False, x) = Lit x
+       mkLit (Any True, x) = Not (Lit x)
 
--- Not-operator, avoiding double negation.
-not' :: SAT a -> SAT a
-not' (Not a) = a
-not' a = (Not a)
 
-cnfClauses :: SAT a -> CNF a
-cnfClauses (Lit a) = [LitC False a]
--- Move all `Not` completely down the syntax tree.
-cnfClauses (Not (Lit a)) = [LitC True a]
-cnfClauses (Not (Not a)) = cnfClauses a
-cnfClauses (Not (a :|| b)) = cnfClauses (not' a) ++ cnfClauses (not' b)
-cnfClauses (Not (a :&& b)) = cnfClauses (not' a :|| not' b)
--- Move all `:&&` up the syntax tree.
-cnfClauses (a :|| (b:&&c)) = cnfClauses (a:||b) ++ cnfClauses (a:||c)
-cnfClauses ((a:&&b) :|| c) = cnfClauses (a:||c) ++ cnfClauses (b:||c)
-cnfClauses (a:&&b) = cnfClauses a ++ cnfClauses b
-cnfClauses (a:||b) = [a':|b' | a'<-cnfClauses a, b'<-cnfClauses b]
-                     
-
-assocR :: CNFClause a -> CNFClause a
--- Make the OR right-associative, so we can deconstruct it
--- left-to-right.
-assocR ((a:|b):|c) = assocR a :| assocR b :| assocR c
-assocR a = a
-
-oCNFTo3CNF, oCNFTo3CNF' :: CNFClause a -> CNF a
-oCNFTo3CNF = oCNFTo3CNF' . assocR
--- Eliminate clauses with more than three disjunctions.
-oCNFTo3CNF' (LitC n x) = [LitC n x]
-oCNFTo3CNF' (LitC n x :| LitC n' x') = [LitC n x :| LitC n' x']
-oCNFTo3CNF' (LitC n x :| LitC n' x' :| LitC n'' x'')
-         = [LitC n x :| LitC n' x' :| LitC n'' x'']
-oCNFTo3CNF' (a:|b) = oCNFTo3CNF' . (a:|) =<< oCNFTo3CNF' b
-
+instance Booly Bool where
+  (∨) = (||)
+  (∧) = (&&)
+  not False = True
+  not True = False
