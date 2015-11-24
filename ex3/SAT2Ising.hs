@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, TypeFamilies #-}
 
 import Prelude hiding (not)
 import Control.Arrow
@@ -10,8 +10,9 @@ class Booly b where
   not :: b -> b
 
 class HasVariables b where
-  lit :: x -> b x
-  newVariable :: (Enum x, Ord x) => b x -> x
+  type VarIndex b :: *
+  lit :: VarIndex b -> b
+  newVariables :: b -> [VarIndex b]
 
 infixr 2 :∨, ∨
 infixr 3 :∧, ∧
@@ -35,9 +36,11 @@ instance Booly (CNF a) where
   not (p₁:ps) = [[first (Any False<>) x] | x <- p₁] ∨ not ps
   not [] = [[]]
 
-instance HasVariables CNF where
+instance (Enum a, Ord a) => HasVariables (CNF a) where
+  type VarIndex (CNF a) = a
   lit x = [[(Any False, x)]]
-  newVariable cnfs = succ highest where highest = maximum $ map (maximum . snd) cnfs
+  newVariables cnfs = tail [highest..]
+   where highest = maximum $ map (maximum . map snd) cnfs
 
 
 newtype CNF3Clause a = CNF3Clause {get3Clause :: CNFClause a} deriving (Show)
@@ -47,25 +50,37 @@ type CNF3 a = [CNF3Clause a]
 getCNF3 :: CNF3 a -> CNF a
 getCNF3 = map get3Clause
 
+instance (Enum a, Ord a) => HasVariables (CNF3 a) where
+  type VarIndex (CNF a) = a
+  lit x = [CNF3Clause [(Any False, x)]]
+  newVariables = newVariables . getCNF3
+
 instance Booly (CNF3 a) where
-  -- conjunction is still just concatenation:
   p₁ ∧ p₂ = p₁ ++ p₂
   
-  -- De Morgan's law works as before.
-  not (CNF3Clause p₁:ps) = [CNF3Clause [first (Any False<>) x] | x <- p₁] ∨ not ps
-  not [] = [CNF3Clause[]]
-                
-  -- defer to ordinary CNF to implement disjunction. 
-  p₁ ∨ p₂ = cnfTo3CNF =<< getCNF3 p₁ ∨ getCNF3 p₂
+  -- short single-clause formulas can just be merged.
+  [CNF3Clause [x]] ∨ p | all ((<3) . length . get3Clause) p
+                       = map (\(CNF3Clause c) -> CNF3Clause (x:c))
+  p ∨ [CNF3Clause [x]] | all ((<3) . length . get3Clause) p
+                       = map (\(CNF3Clause c) -> CNF3Clause (x:c))
+  -- For larger disjunctions, introduce new variables that represent
+  -- satisfaction of either of the subequations.
+  p₁ ∨ p₂ = (lit z₁∨lit z₂) ∧ (not(lit z₁)∨p₁) ∧ (not(lit z₂)∨p₂)
+   where (z₁:z₂:_) = newVariables (p₁ ++ p₂)
+  
+  not (p₁:ps) = [[first (Any False<>) x] | x <- p₁] ∨ not ps
+  not [] = [[]]
   
 
 satTo3sat :: CNFClause Integer -> CNF3 Integer
 satTo3sat p
   | l<=3       = [CNF3Clause p]
-     -- Eliminate clauses with more than three disjunctions by using De Morgan.
-  | otherwise  = not $ (cnfTo3CNF =<< not [pl]) ∧ (cnfTo3CNF =<< not [pr])
+  | otherwise  = lit z ++ []
  where l = length p
        (pl,pr) = splitAt (l`div`2) p
+       p'l = satTo3sat pl
+       p'r = satTo3sat pr
+       z = newVariable (p'l ++ p'r)
 
 
 
