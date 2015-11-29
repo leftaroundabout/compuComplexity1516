@@ -4,15 +4,17 @@ import Prelude hiding (not)
 import Control.Arrow
 import Control.Monad
 import Data.Monoid
+import Data.List
 
 -- Example run:
 -- @
--- GHCi> asSAT . getCNF3 $ satTo3sat =<< ((x₁ ∨ x₂ ∨ not x₃ ∨ x₅ ∨ x₇) ∧ (x₂ ∨ x₄ ∨ x₆ ∨ not x₇))
--- (Lit 1 :∨ (Lit 2 :∨ Lit 8)) :∧ ((Lit 9 :∨ (Lit 5 :∨ Lit 7)) :∧ ((Lit 2 :∨ (Lit 4 :∨ Lit 8)) :∧ (Lit 8 :∨ (Lit 6 :∨ Not (Lit 7)))))
+-- GHCi> let (x₁: x₂: x₃: x₄: x₅: x₆: x₇: x₈: x₉: _) = lit <$> [1..]
+-- GHCi> asSAT . getCNF3 . satTo3sat $ (x₁ ∨ x₂ ∨ not x₃ ∨ x₅ ∨ x₇) ∧ (x₂ ∨ x₄ ∨ x₆ ∨ not x₇)
+-- (Lit 1 :∨ (Lit 2 :∨ Lit 8)) :∧ ((Lit 9 :∨ (Lit 5 :∨ Lit 7)) :∧ ((Lit 10 :∨ (Lit 4 :∨ Lit 11)) :∧ (Lit 11 :∨ (Lit 6 :∨ Not (Lit 12)))))
 -- @
 
-satTo3sat :: (Enum a, Ord a) => CNFClause a -> CNF3 a
-satTo3sat xs
+satTo3sat' :: (Enum a, Ord a) => CNFClause a -> CNF3 a
+satTo3sat' xs
   | n<=3       =  [CNF3Clause xs]
   
   | otherwise  =  [CNF3Clause [x₁, x₂, a₁]]
@@ -26,6 +28,11 @@ satTo3sat xs
        newvars = (mempty,) <$> newVariables [xs]
        (a₁:newvarsMid) = take (n-3) newvars
 
+satTo3sat :: (Enum a, Ord a) => CNF a -> CNF3 a
+satTo3sat = foldr (\c₁ c₂ -> uncurry(++) $ mkIndependent (satTo3sat' c₁) c₂) []
+
+-- _3satToNAE4 :: CNF3Clause a -> NAE3 a
+
 
 
 
@@ -36,10 +43,23 @@ class Booly b where
   (∧) :: b -> b -> b
   not :: b -> b
 
-class HasVariables b where
+class (Ord (VarIndex b), Enum (VarIndex b)) => HasVariables b where
   type VarIndex b :: *
   lit :: VarIndex b -> b
   newVariables :: b -> [VarIndex b]
+  newVariables b = tail [highest..]
+   where highest = maximum $ allVariables b
+  allVariables :: b -> [VarIndex b]
+  mkIndependent :: b -> b -> (b,b)
+  mkIndependent b₁ b₂ = (b₁, renameVariables (\v -> case lookup v clashes of
+                                                      Nothing -> v
+                                                      Just ic -> newVars !! ic ) b₂)
+   where vars₁ = allVariables b₁
+         vars₂ = allVariables b₂
+         clashes = zip (intersect vars₁ vars₂) [0..]
+         newVars = tail [maximum $ vars₁ ++ vars₂ ..]
+  renameVariables :: (VarIndex b->VarIndex b) -> b -> b
+  
 
 infixr 2 :∨, ∨
 infixr 3 :∧, ∧
@@ -71,9 +91,9 @@ instance Booly (CNF a) where
 
 instance (Enum a, Ord a) => HasVariables (CNF a) where
   type VarIndex (CNF a) = a
-  lit x = [[(Any False, x)]]
-  newVariables cnfs = tail [highest..]
-   where highest = maximum $ map (maximum . map snd) cnfs
+  lit x = [[(mempty, x)]]
+  allVariables = nub . concat . map (map snd)
+  renameVariables f = map . map $ second f
 
 
 newtype CNF3Clause a = CNF3Clause {get3Clause :: CNFClause a} deriving (Show)
@@ -85,21 +105,23 @@ getCNF3 = map get3Clause
 
 instance (Enum a, Ord a) => HasVariables (CNF3 a) where
   type VarIndex (CNF3 a) = a
-  lit x = [CNF3Clause [(Any False, x)]]
-  newVariables = newVariables . getCNF3
+  lit x = [CNF3Clause [(mempty, x)]]
+  allVariables = allVariables . getCNF3
+  renameVariables f = map $ CNF3Clause . map (second f) . get3Clause
 
 instance (Enum a, Ord a) => Booly (CNF3 a) where
   p₁ ∧ p₂ = p₁ ++ p₂
-  
-  p₁ ∨ p₂ = satTo3sat =<< getCNF3 p₁ ∨ getCNF3 p₂
-  
-  not = satTo3sat <=< not . getCNF3
+  p₁ ∨ p₂ = satTo3sat $ getCNF3 p₁ ∨ getCNF3 p₂
+  not = satTo3sat . not . getCNF3
   
 
 
 
 
-type NAE3CNF a = CNF3 a  -- interpreted differently: `:|` means
+type NAE3 a = [NAE3Clause a]  -- interpreted differently: `∨` means not-equal now.
+
+
+newtype NAE3Clause a = NAE3Clause {nae3ClauseAsOR :: CNFClause a} deriving (Show)
 
 
 
