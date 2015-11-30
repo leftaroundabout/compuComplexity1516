@@ -1,0 +1,38 @@
+
+
+
+\exno[4]{Computional Hardness of the Ising problem}
+
+\subex[4]{$\mathit{MAX-CUT} \leq_p \mathit{weighted\ MAX-CUT}$}
+An unweighted graph $(V,E)$ can be simply seen as a weighted graph $(V,J)$ whose weights $J_{ij}:(i,j)\in E$ are all $1$. This does not incur any overhead.
+The size of a cut in this weighted graph is the same as the corresponding cut in the unweighted graph.
+
+
+\subex[5]{$\mathit{weighted\ MAX-CUT} \leq_p \mathit{Ising}$}
+Interpret $(V,J)$ now as an Ising model. The possibilities of cuts of the graph are equivalent to selections of spins $\vec\sigma$ of the model.
+
+From the Hamiltonian for such a selection
+\[
+  H(\vec{\sigma}) = -\sum_{i,j} J_{ij} \sigma_i \sigma_j
+\]
+we can also compute the size of the corresponding cut:
+\[
+  \sum_{i,j} J_{ij} + H(\vec\sigma)
+   = \sum_{i,j} J_{ij} (1 - \sigma_i \sigma_j)
+   = \sum_{i,j: \sigma_i\neq\sigma_j} 2\cdot J_{ij}
+   = 2 \Sigma S.
+\]
+Therefore, if we are able to determine that the system permits a state with energy $>E$ (physically it would of course be more meaningful to consider energy $<E$, which is equivalent.)
+then we can also determine whether the graph has a cut of a size $>k$: choose
+\[
+  E = 2k - \sum_{i,j}J_{ij}.
+\]
+If there is a state $\vec\sigma$ that lies above this energy, then the corresponding graph cut has a size greater than $k$.
+
+Thus, the Ising problem is NP-hard, because it can be used to decide SAT, via the route described in this exercise.
+
+Also, Ising is in NP, because for a given state $\vec\sigma$, deciding whether it has energy below a given bound is just a matter of carrying out the summation -- at most $\bigO(n^2)$ in the 
+number of spins.
+
+All together, Ising is NP-complete.
+
