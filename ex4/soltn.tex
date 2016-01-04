@@ -1,0 +1,109 @@
+
+
+
+\exno[5]{Linear Programming Relaxations for weighted vertex cover}
+
+\newcommand{\xIntgMin}{\bbv{x}\rmsc{\!I}}
+\newcommand{\xRealMin}{\bbv{x}\rmsc{\!R}}
+Given a fixed minimisation direction $\bbv{c}\in\mathbb{R}^n$ and
+$m$ constraint specifiers $\bbv{a_j}\in\mathbb{R}^n$, $b_j\in\mathbb{R}$,
+let $\xIntgMin\in\{0,1\}^n$ and $\xRealMin\in[0,1]^n$ be solutions to
+the problem of minimising $\braKet{\bbv{c}}{\bbv{x}}$ under the constraint
+$\braKet{\bbv{a}_j}{\bbv{x}}\geq b_j$, for integral and connected domain respectively.
+Finding such solutions is the task of the ILP / LP linear-programming problems.
+
+\subex{}\label{continuousrules}
+$\xIntgMin$ can never solve the problem better than $\xRealMin$,
+because $\{0,1\}^n \subset [0,1]^n$, so, if
+$\braKet{\bbv{c}}{\xIntgMin} < \braKet{\bbv{c}}{\xRealMin}$ were the
+case, then $\xIntgMin$ would also have to be the solution to the 
+continuous minimisation problem, and $\xRealMin$ would \emph{not} be
+the global minimum, in contradiction to the assumption.
+
+\subex{}
+
+Let $(V,E)$ a graph and $c\colon V \to \mathbb{R}$ a cost function. We seek the
+minimal weighted vertex cover, i.e. a vertex subset $S \in \mathbb{P}(V)$ with the
+property that all $(u,v)\in E$ intersect $S$, such that
+\[
+  \sum_{v\in S}c_v
+\]
+\newcommand{\xSharpI}{\bbv{x}^{\sharp}_{\mathrm{ILP}}}
+\newcommand{\xSharp}{\bbv{x}^{\sharp}_{\mathrm{LP}}}
+is minimal. This can equivalently be formulated as the search for a characteristic
+vector $\xSharpI \in \{0,1\}^{|V|} \simeq (V\to \{0,1\}) \simeq \mathbb{P}(V)$ such that
+\[
+  \sum_{v\in V}c_v \cdot (\xSharpI)_v
+    = \braKet{\bbv{c}}{\xSharpI}
+\]
+is minimal, while obeying
+\[
+  \sum_{v\in V} (\delta_{vu} + \delta_{vw})\cdot (\xSharpI)_v \geq 1  \qquad { \forall (u,w)\in E }
+\]
+where $\delta$ is the Kronecker symbol, indicating as 1 when an edge-end is in the sum.
+
+Obtaining such a minimum is a task for ILP.
+The result of the minimisation can be read as a vertex cover by letting
+\newcommand{\covI}{S\rmsc{ILP}}
+\newcommand{\cov}{S\rmsc{LP}}
+\[
+  { \covI = \{v\in V : (\xSharpI)_v = 1\} }.
+\]
+
+\subex{}
+Unlike ILP, the continuous LP can not be expected to yield any components equal to
+1 (or any other concrete number), which could be interpreted as clear membership or
+not-membership in a vertex cover.
+However, given a solution $\xSharp \in [0,1]^{|V|}$ to the specification above but
+continuous domain, we can define
+\[
+  { \cov = \{v\in V : (\xSharp)_v \geq \tfrac12\} }.
+\]
+Claim: \emph{this still defines a vertex cover, and has a cost of at most a constant multiple
+of the optimal solution $\xSharpI$}.
+\\\\
+Proof: we have required
+\[
+  \sum_{v\in V} (\delta_{vu} + \delta_{vw})\cdot (\xSharpI)_v \geq 1  \qquad { \forall (u,w)\in E }.
+\]
+For any edge $(u,w)$, this sum actually has only two nonzero terms:
+\[
+  (\xSharp)_u + (\xSharp)_w \geq 1.
+\]
+Because the $(\xSharp)_v$ are all in $[0,1]$, this will be fulfilled iff either
+$(\xSharp)_u \geq \tfrac12$ or $(\xSharp)_w \geq \tfrac12$ (or both),
+meaning that either vertex $u$ or $w$ is in $\cov$.
+Holding for all edges, this implies that $\cov$ is a vertex cover.
+
+\newcommand{\cost}{\mathrm{cost}}
+Furthermore, the cost of this solution is bounded from above by $2\cdot\cost(\covI)$:
+\[
+  \cost(\cov)
+    = \sum_{v\in \cov} c_v
+    = \quad \sum_{\mathrlap{v\in V : (\xSharp)_v\geq\tfrac12}} c_v
+    \leq\quad 
+        \sum_{\mathrlap{v\in V : (\xSharp)_v<\tfrac12}}
+            {(\text{anything }\geq 0)}
+        + \sum_{\mathrlap{v\in V : (\xSharp)_v\geq\tfrac12}}
+             c_v \cdot{(\text{anything }\geq 1)}
+    \leq\quad  \sum_{v\in V} c_v \cdot 2\cdot (\xSharp)_v
+\]
+because $2\cdot (\xSharp)_v$ is always $\geq 0$, and even $\geq 1$
+whenever $(\xSharp)_v\geq\tfrac12$. Now,
+\[
+  \sum_{v\in V}c_v \cdot (\xSharp)_v
+\]
+is the original expression minimised by both the LP and ILP, where as said
+in \ref{continuousrules} the
+LP solution is at least as good as the ILP one (which is however the actual optimal cost
+for the vertex cover problem). So we have
+\[
+  \cost(\covI)
+   \leq \cost(\cov)
+   \leq 2\cdot \sum_{v\in V}c_v \cdot (\xSharp)_v
+   \leq 2\cdot \sum_{v\in V}c_v \cdot (\xSharpI)_v
+   = 2\cdot \cost(\covI).
+\]
+
+
+
