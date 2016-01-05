@@ -12,8 +12,15 @@ LECTPDF=transscr.pdf
 TEXC=xelatex_halt-on-error
 
 
-all: solutions # $(LECTPDF)
+all: preproc solutions # $(LECTPDF)
 .PHONY: all
+
+SUBMAKES=$(wildcard ex*/Makefile)
+preproc:
+	for mkf in $(SUBMAKES) ; do \
+            $(MAKE) -C $$(dirname $$mkf) ; \
+          done
+.PHONY: preproc
 
 
 solutions: $(foreach dir, $(wildcard ex*), $(dir)/$(SLTNPDF))

@@ -105,5 +105,20 @@ for the vertex cover problem). So we have
    = 2\cdot \cost(\covI).
 \]
 
+\subex{}
+\newcommand{\centcost}{\mathscr{V}}
+We consider star-shaped graphs in which the central vertex has a cost of $\centcost$
+and each of the $N$ satellite vertices has cost $1$. Clearly, the optimum vertex
+cover for this scenario is to cover only the central vertex if $\centcost<N$ (giving
+a total cost $\centcost$), and to cover all satellites but not the center otherwise, which
+has a cost of $N$. We use a numerical LP-solver to check how well the relaxated version
+of the problem matches this.
+
+\simplegraphics{ex4/starcosts.pdf}
+   {Numerically solving the LP-problem shows that, for star-shaped graphs, the relaxated
+    solution perfectly matches the exact integral one.}
+
+
+
 
 
