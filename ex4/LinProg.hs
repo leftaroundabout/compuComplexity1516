@@ -1,5 +1,3 @@
-{-# LANGUAGE ParallelListComp #-}
-
 import Data.LinearProgram
 
 import Graphics.Rendering.Chart.Easy
@@ -8,13 +6,12 @@ import System.Directory
 
 import Control.Arrow
 import Control.Monad
-import Control.Monad.Trans
 import Data.List
 
 
 main :: IO ()
 main = do
-   graphs <- forM [10,100,1000,5000] $ \n -> do
+   graphCosts <- forM [10,100,1000,5000] $ \n -> do
       cs <- forM [2**lv | lv<-[0,0.2 .. 13]] $ \v -> do
          let g = starGraph n v
          (Success, Just (c,_)) <- glpSolveVars mipDefaults (vertexCover_LP g)
@@ -23,11 +20,13 @@ main = do
    toPdfFile (520,480) "starcosts" $ do
       layout_x_axis . laxis_title .= "V" 
       layout_y_axis . laxis_title .= "cost" 
-      forM_ graphs $ \(n,cs) -> do
+      forM_ graphCosts $ \(n,cs) -> do
          plot $ line ("N = "++show n) [(logDom***logDom)<$>cs]
          
 
 
+-- Definition of the graph type
+-- -- --
 
 type VertexID = Int
 
@@ -37,11 +36,14 @@ data Graph a = Graph { graphVerts :: [a], graphEdges :: [(VertexID, VertexID)] }
 type Cost = Double
 
 
+-- Linear programming
+-- -- --
 
 -- | Create, for a graph with vertex-costs, a linear program corresponding to
 --   the vertex-cover relaxation.
 vertexCover_LP :: Graph Cost -> LP VertexID Cost
 vertexCover_LP (Graph vCosts edges) = execLPM $ do
+
     forM_ [0 .. length vCosts-1] $ \v -> do
        setVarKind v ContVar
        varGeq v 0; varLeq v 1  -- for every vertex a variable in interval [0,1]
@@ -63,6 +65,8 @@ starGraph n v = Graph { graphVerts = v : replicate n 1
 
 
 
+-- Plotting utility
+-- -- --
 
 toPdfFile :: (ToRenderable r, Default r) => (Int,Int) -> FilePath -> EC r () -> IO ()
 toPdfFile sz fn plot = do
